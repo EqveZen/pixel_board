@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Land - Купи свой пиксель</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">
+                🎮 Pixel Land
+                <span>цены в $</span>
+            </div>
+            <div>
+                <span id="userInfo" style="margin-right: 15px;"></span>
+                <button class="btn" onclick="showAuthModal('login')" id="loginBtn">Вход</button>
+                <button class="btn btn-primary" onclick="showAuthModal('register')" id="registerBtn">Регистрация</button>
+                <button class="btn btn-outline" onclick="signOut()" id="logoutBtn" style="display: none;">Выход</button>
+                <button class="btn btn-outline" onclick="window.location.href='dashboard.html'" id="dashboardBtn" style="display: none;">Кабинет</button>
+            </div>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="totalCells">0</div>
+                <div class="stat-label">Всего ячеек</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="soldCells">0</div>
+                <div class="stat-label">Продано</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="availableCells">0</div>
+                <div class="stat-label">Свободно</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalRevenue">$0</div>
+                <div class="stat-label">Потенциал</div>
+            </div>
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: #e2e8f0;"></div>
+                <span>$4 - Эконом</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #93c5fd;"></div>
+                <span>$12 - Бизнес</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #fbbf24;"></div>
+                <span>$20 - Премиум</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #fff; border: 2px solid #2563eb;"></div>
+                <span>Занято</span>
+            </div>
+        </div>
+        
+        <div class="map-controls">
+            <input type="text" class="search-box" id="searchInput" placeholder="🔍 Поиск (например: 50,25 или $20)">
+            <select class="btn" id="priceFilter">
+                <option value="">Все цены</option>
+                <option value="0-4">$4 (эконом)</option>
+                <option value="4-12">$4-12</option>
+                <option value="12-20">$12-20</option>
+                <option value="20-100">$20+ (премиум)</option>
+            </select>
+            <button class="btn btn-outline" onclick="exportMap()">📊 Экспорт</button>
+        </div>
+        
+        <div class="map-wrapper">
+            <div id="loadingIndicator" class="loader" style="display: none; margin: 50px auto;"></div>
+            <div id="map" class="map-grid"></div>
+        </div>
+        
+        <div class="map-tools">
+            <button onclick="moveMap('up')">↑</button>
+            <button onclick="moveMap('left')">←</button>
+            <button onclick="moveMap('right')">→</button>
+            <button onclick="moveMap('down')">↓</button>
+            <button onclick="document.querySelector('.map-wrapper').scrollTo(0,0)">⏫</button>
+        </div>
+        
+        <div class="cell-preview" id="cellPreview">
+            <div class="coordinates" id="previewCoords"></div>
+            <div class="price" id="previewPrice"></div>
+            <div class="owner" id="previewOwner"></div>
+        </div>
+    </div>
+    
+    <div id="authModal" class="modal">
+        <div class="modal-content">
+            <h2 id="authTitle">Вход</h2>
+            <input type="email" id="email" placeholder="Email">
+            <input type="password" id="password" placeholder="Пароль">
+            <div class="modal-buttons">
+                <button class="btn btn-primary" id="authBtn">Войти</button>
+                <button class="btn btn-outline" onclick="closeModal('authModal')">Отмена</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="buyModal" class="modal">
+        <div class="modal-content">
+            <h2>Покупка ячейки</h2>
+            <p style="text-align: center; font-size: 18px;" id="buyCellInfo"></p>
+            
+            <div class="price-tag">
+                <span id="buyPriceUSD"></span>
+                <br>
+                <small id="buyPriceRUB"></small>
+            </div>
+            
+            <label>Способ оплаты:</label>
+            <select id="paymentMethod" class="btn" style="width: 100%;">
+                <option value="yookassa">ЮMoney (карты, SBP)</option>
+                <option value="paypal">PayPal</option>
+                <option value="crypto">Криптовалюта</option>
+            </select>
+            
+            <div class="modal-buttons">
+                <button class="btn btn-success" onclick="processPurchase()">Оплатить</button>
+                <button class="btn btn-outline" onclick="closeModal('buyModal')">Отмена</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="cellDetailsModal" class="modal">
+        <div class="modal-content">
+            <h2>Детали ячейки</h2>
+            <div id="cellDetailsContent"></div>
+            <div class="modal-buttons">
+                <button class="btn btn-outline" onclick="closeModal('cellDetailsModal')">Закрыть</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="notification" class="notification">
+        <span id="notificationMessage"></span>
+    </div>
+    
+    <script src="js/config.js"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/map.js"></script>
+</body>
+</html>
