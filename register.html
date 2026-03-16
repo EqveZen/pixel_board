@@ -54,14 +54,6 @@
             outline: none;
         }
         
-        .auth-card input.valid {
-            border-color: #059669;
-        }
-        
-        .auth-card input.invalid {
-            border-color: #dc2626;
-        }
-        
         .auth-card button {
             width: 100%;
             padding: 15px;
@@ -84,21 +76,6 @@
         .auth-card button:disabled {
             background: #94a3b8;
             cursor: not-allowed;
-        }
-        
-        .auth-card .links {
-            text-align: center;
-            margin-top: 20px;
-        }
-        
-        .auth-card .links a {
-            color: #2563eb;
-            text-decoration: none;
-            margin: 0 10px;
-        }
-        
-        .auth-card .links a:hover {
-            text-decoration: underline;
         }
         
         .auth-card .error {
@@ -161,10 +138,7 @@
         .terms a {
             color: #2563eb;
             text-decoration: none;
-        }
-        
-        .terms a:hover {
-            text-decoration: underline;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -195,7 +169,7 @@
                 
                 <div class="terms">
                     <input type="checkbox" id="agreeTerms" required>
-                    <label for="agreeTerms">Я соглашаюсь с <a href="#" onclick="showTerms()">условиями использования</a></label>
+                    <label for="agreeTerms">Я соглашаюсь с <a onclick="showTerms()">условиями использования</a></label>
                 </div>
                 
                 <button type="submit" id="submitBtn" disabled>
@@ -204,10 +178,10 @@
                 </button>
             </form>
             
-            <div class="links">
-                <a href="login.html">Уже есть аккаунт? Войти</a>
+            <div class="links" style="text-align: center; margin-top: 20px;">
+                <a href="login.html" style="color: #2563eb; text-decoration: none;">Уже есть аккаунт? Войти</a>
                 <br>
-                <a href="index.html">← Вернуться на карту</a>
+                <a href="index.html" style="color: #2563eb; text-decoration: none;">← Вернуться на карту</a>
             </div>
         </div>
     </div>
@@ -216,7 +190,7 @@
     <div id="termsModal" class="modal">
         <div class="modal-content" style="max-width: 600px;">
             <h2>Условия использования</h2>
-            <div style="max-height: 400px; overflow-y: auto; margin: 20px 0;">
+            <div style="max-height: 400px; overflow-y: auto; margin: 20px 0; padding: 10px;">
                 <h3>1. Общие положения</h3>
                 <p>1.1. Pixel Land — это платформа для покупки виртуальных ячеек.</p>
                 <p>1.2. Покупая ячейку, вы получаете право размещать на ней контент.</p>
@@ -243,6 +217,7 @@
     
     <script src="js/config.js"></script>
     <script src="js/notifications.js"></script>
+    <script src="js/auth.js"></script>
     <script>
         let passwordValid = {
             length: false,
@@ -313,19 +288,8 @@
             successDiv.style.display = 'none';
             
             try {
-                const { data, error } = await supabase.auth.signUp({
-                    email: email,
-                    password: password
-                });
-                
-                if (error) throw error;
-                
-                if (data.user) {
-                    // Создаем профиль
-                    await supabase.from('profiles').insert([
-                        { id: data.user.id, email: email }
-                    ]);
-                }
+                // Используем функцию signUp из auth.js
+                const result = await signUp(email, password);
                 
                 showSuccess('Регистрация успешна! Проверьте почту для подтверждения.');
                 
