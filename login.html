@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Land - Вход</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+        
+        .auth-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        
+        .auth-card .logo {
+            text-align: center;
+            font-size: 32px;
+            color: #2563eb;
+            margin-bottom: 30px;
+            cursor: pointer;
+        }
+        
+        .auth-card h2 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+        
+        .auth-card input {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: 0.2s;
+        }
+        
+        .auth-card input:focus {
+            border-color: #2563eb;
+            outline: none;
+        }
+        
+        .auth-card button {
+            width: 100%;
+            padding: 15px;
+            margin: 20px 0;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        
+        .auth-card button:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+        }
+        
+        .auth-card .links {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .auth-card .links a {
+            color: #2563eb;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+        
+        .auth-card .links a:hover {
+            text-decoration: underline;
+        }
+        
+        .auth-card .error {
+            color: #dc2626;
+            text-align: center;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        
+        .auth-card .success {
+            color: #059669;
+            text-align: center;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        
+        .password-requirements {
+            font-size: 12px;
+            color: #666;
+            margin: 5px 0;
+            padding-left: 15px;
+        }
+        
+        .password-requirements li {
+            margin: 3px 0;
+        }
+        
+        .password-requirements .valid {
+            color: #059669;
+        }
+        
+        .password-requirements .invalid {
+            color: #dc2626;
+        }
+        
+        .loader-small {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #2563eb;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="logo" onclick="window.location.href='index.html'">
+                🎮 Pixel Land
+            </div>
+            
+            <h2>Вход в аккаунт</h2>
+            
+            <div id="errorMessage" class="error" style="display: none;"></div>
+            <div id="successMessage" class="success" style="display: none;"></div>
+            
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <input type="email" id="email" placeholder="Email" required>
+                <input type="password" id="password" placeholder="Пароль" required minlength="6">
+                
+                <button type="submit" id="submitBtn">
+                    <span id="btnText">Войти</span>
+                    <span id="btnLoader" class="loader-small" style="display: none;"></span>
+                </button>
+            </form>
+            
+            <div class="links">
+                <a href="register.html">Нет аккаунта? Зарегистрироваться</a>
+                <br>
+                <a href="#" onclick="showResetPassword()">Забыли пароль?</a>
+                <br>
+                <a href="index.html">← Вернуться на карту</a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Модалка восстановления пароля -->
+    <div id="resetModal" class="modal">
+        <div class="modal-content">
+            <h2>Восстановление пароля</h2>
+            <p>Введите ваш email, мы отправим инструкции по восстановлению пароля.</p>
+            <input type="email" id="resetEmail" placeholder="Email">
+            <div class="modal-buttons">
+                <button class="btn btn-primary" onclick="handleResetPassword()">Отправить</button>
+                <button class="btn btn-outline" onclick="closeModal('resetModal')">Отмена</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="notification" class="notification">
+        <span id="notificationMessage"></span>
+    </div>
+    
+    <script src="js/config.js"></script>
+    <script src="js/notifications.js"></script>
+    <script>
+        async function handleLogin(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const submitBtn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('btnText');
+            const btnLoader = document.getElementById('btnLoader');
+            const errorDiv = document.getElementById('errorMessage');
+            const successDiv = document.getElementById('successMessage');
+            
+            // Валидация
+            if (!email || !password) {
+                showError('Заполните все поля');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showError('Пароль должен быть не менее 6 символов');
+                return;
+            }
+            
+            // Показываем загрузку
+            submitBtn.disabled = true;
+            btnText.style.display = 'none';
+            btnLoader.style.display = 'inline-block';
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+            
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+                
+                if (error) throw error;
+                
+                showSuccess('Успешный вход! Перенаправляем...');
+                
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1500);
+                
+            } catch (error) {
+                showError('Ошибка: ' + error.message);
+                submitBtn.disabled = false;
+                btnText.style.display = 'inline';
+                btnLoader.style.display = 'none';
+            }
+        }
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+        
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+        }
+        
+        function showResetPassword() {
+            document.getElementById('resetModal').classList.add('active');
+        }
+        
+        async function handleResetPassword() {
+            const email = document.getElementById('resetEmail').value;
+            
+            if (!email) {
+                showNotification('Введите email', 'error');
+                return;
+            }
+            
+            try {
+                const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                    redirectTo: window.location.origin + '/reset-password.html',
+                });
+                
+                if (error) throw error;
+                
+                showNotification('Инструкции отправлены на почту!', 'success');
+                closeModal('resetModal');
+                
+            } catch (error) {
+                showNotification('Ошибка: ' + error.message, 'error');
+            }
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+        
+        // Проверяем, может пользователь уже залогинен
+        async function checkAuth() {
+            const user = await getCurrentUser();
+            if (user) {
+                window.location.href = 'index.html';
+            }
+        }
+        
+        checkAuth();
+    </script>
+</body>
+</html>
