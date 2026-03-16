@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Land - Регистрация</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+        
+        .auth-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        
+        .auth-card .logo {
+            text-align: center;
+            font-size: 32px;
+            color: #2563eb;
+            margin-bottom: 30px;
+            cursor: pointer;
+        }
+        
+        .auth-card h2 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+        
+        .auth-card input {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: 0.2s;
+        }
+        
+        .auth-card input:focus {
+            border-color: #2563eb;
+            outline: none;
+        }
+        
+        .auth-card input.valid {
+            border-color: #059669;
+        }
+        
+        .auth-card input.invalid {
+            border-color: #dc2626;
+        }
+        
+        .auth-card button {
+            width: 100%;
+            padding: 15px;
+            margin: 20px 0;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        
+        .auth-card button:hover:not(:disabled) {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+        }
+        
+        .auth-card button:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+        
+        .auth-card .links {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .auth-card .links a {
+            color: #2563eb;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+        
+        .auth-card .links a:hover {
+            text-decoration: underline;
+        }
+        
+        .auth-card .error {
+            color: #dc2626;
+            text-align: center;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        
+        .auth-card .success {
+            color: #059669;
+            text-align: center;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        
+        .password-requirements {
+            font-size: 12px;
+            color: #666;
+            margin: 5px 0 15px 0;
+            padding-left: 15px;
+            list-style: none;
+        }
+        
+        .password-requirements li {
+            margin: 5px 0;
+        }
+        
+        .password-requirements .valid {
+            color: #059669;
+        }
+        
+        .password-requirements .invalid {
+            color: #dc2626;
+        }
+        
+        .loader-small {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #2563eb;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .terms {
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+            margin: 15px 0;
+        }
+        
+        .terms a {
+            color: #2563eb;
+            text-decoration: none;
+        }
+        
+        .terms a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="logo" onclick="window.location.href='index.html'">
+                🎮 Pixel Land
+            </div>
+            
+            <h2>Создать аккаунт</h2>
+            
+            <div id="errorMessage" class="error" style="display: none;"></div>
+            <div id="successMessage" class="success" style="display: none;"></div>
+            
+            <form id="registerForm" onsubmit="handleRegister(event)">
+                <input type="email" id="email" placeholder="Email" required>
+                
+                <input type="password" id="password" placeholder="Пароль" required>
+                <input type="password" id="confirmPassword" placeholder="Подтвердите пароль" required>
+                
+                <ul class="password-requirements" id="passwordRequirements">
+                    <li id="reqLength">✗ Минимум 6 символов</li>
+                    <li id="reqMatch">✗ Пароли совпадают</li>
+                    <li id="reqLetter">✗ Хотя бы одна буква</li>
+                    <li id="reqNumber">✗ Хотя бы одна цифра</li>
+                </ul>
+                
+                <div class="terms">
+                    <input type="checkbox" id="agreeTerms" required>
+                    <label for="agreeTerms">Я соглашаюсь с <a href="#" onclick="showTerms()">условиями использования</a></label>
+                </div>
+                
+                <button type="submit" id="submitBtn" disabled>
+                    <span id="btnText">Зарегистрироваться</span>
+                    <span id="btnLoader" class="loader-small" style="display: none;"></span>
+                </button>
+            </form>
+            
+            <div class="links">
+                <a href="login.html">Уже есть аккаунт? Войти</a>
+                <br>
+                <a href="index.html">← Вернуться на карту</a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Модалка с условиями -->
+    <div id="termsModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <h2>Условия использования</h2>
+            <div style="max-height: 400px; overflow-y: auto; margin: 20px 0;">
+                <h3>1. Общие положения</h3>
+                <p>1.1. Pixel Land — это платформа для покупки виртуальных ячеек.</p>
+                <p>1.2. Покупая ячейку, вы получаете право размещать на ней контент.</p>
+                
+                <h3>2. Правила размещения контента</h3>
+                <p>2.1. Запрещено размещать противоправный контент.</p>
+                <p>2.2. Запрещено размещать ссылки на вредоносные сайты.</p>
+                <p>2.3. Администрация имеет право удалить контент без возврата средств.</p>
+                
+                <h3>3. Оплата</h3>
+                <p>3.1. Все цены указаны в долларах США.</p>
+                <p>3.2. Оплата производится через ЮKassa.</p>
+                <p>3.3. Возврат средств возможен только в течение 14 дней, если ячейка не была изменена.</p>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" onclick="closeModal('termsModal')">Принимаю</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="notification" class="notification">
+        <span id="notificationMessage"></span>
+    </div>
+    
+    <script src="js/config.js"></script>
+    <script src="js/notifications.js"></script>
+    <script>
+        let passwordValid = {
+            length: false,
+            match: false,
+            letter: false,
+            number: false
+        };
+        
+        // Проверка пароля в реальном времени
+        document.getElementById('password').addEventListener('input', validatePassword);
+        document.getElementById('confirmPassword').addEventListener('input', validatePassword);
+        
+        function validatePassword() {
+            const password = document.getElementById('password').value;
+            const confirm = document.getElementById('confirmPassword').value;
+            
+            // Проверка длины
+            passwordValid.length = password.length >= 6;
+            document.getElementById('reqLength').innerHTML = (passwordValid.length ? '✓' : '✗') + ' Минимум 6 символов';
+            document.getElementById('reqLength').className = passwordValid.length ? 'valid' : 'invalid';
+            
+            // Проверка совпадения
+            passwordValid.match = password === confirm && password.length > 0;
+            document.getElementById('reqMatch').innerHTML = (passwordValid.match ? '✓' : '✗') + ' Пароли совпадают';
+            document.getElementById('reqMatch').className = passwordValid.match ? 'valid' : 'invalid';
+            
+            // Проверка наличия буквы
+            passwordValid.letter = /[a-zA-Zа-яА-Я]/.test(password);
+            document.getElementById('reqLetter').innerHTML = (passwordValid.letter ? '✓' : '✗') + ' Хотя бы одна буква';
+            document.getElementById('reqLetter').className = passwordValid.letter ? 'valid' : 'invalid';
+            
+            // Проверка наличия цифры
+            passwordValid.number = /\d/.test(password);
+            document.getElementById('reqNumber').innerHTML = (passwordValid.number ? '✓' : '✗') + ' Хотя бы одна цифра';
+            document.getElementById('reqNumber').className = passwordValid.number ? 'valid' : 'invalid';
+            
+            // Активация кнопки
+            const allValid = Object.values(passwordValid).every(v => v === true);
+            const agreeTerms = document.getElementById('agreeTerms').checked;
+            
+            document.getElementById('submitBtn').disabled = !(allValid && agreeTerms);
+        }
+        
+        document.getElementById('agreeTerms').addEventListener('change', validatePassword);
+        
+        async function handleRegister(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const submitBtn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('btnText');
+            const btnLoader = document.getElementById('btnLoader');
+            const errorDiv = document.getElementById('errorMessage');
+            const successDiv = document.getElementById('successMessage');
+            
+            // Финальная проверка
+            if (!Object.values(passwordValid).every(v => v === true)) {
+                showError('Пароль не соответствует требованиям');
+                return;
+            }
+            
+            // Показываем загрузку
+            submitBtn.disabled = true;
+            btnText.style.display = 'none';
+            btnLoader.style.display = 'inline-block';
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+            
+            try {
+                const { data, error } = await supabase.auth.signUp({
+                    email: email,
+                    password: password
+                });
+                
+                if (error) throw error;
+                
+                if (data.user) {
+                    // Создаем профиль
+                    await supabase.from('profiles').insert([
+                        { id: data.user.id, email: email }
+                    ]);
+                }
+                
+                showSuccess('Регистрация успешна! Проверьте почту для подтверждения.');
+                
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 3000);
+                
+            } catch (error) {
+                showError('Ошибка: ' + error.message);
+                submitBtn.disabled = false;
+                btnText.style.display = 'inline';
+                btnLoader.style.display = 'none';
+            }
+        }
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+        
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+        }
+        
+        function showTerms() {
+            document.getElementById('termsModal').classList.add('active');
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+        
+        // Проверяем, может пользователь уже залогинен
+        async function checkAuth() {
+            const user = await getCurrentUser();
+            if (user) {
+                window.location.href = 'index.html';
+            }
+        }
+        
+        checkAuth();
+    </script>
+</body>
+</html>
